@@ -5,6 +5,7 @@ import { isAddress } from 'ethers';
 import { lc } from './utils/String.js';
 import getUserAddresses from './data/getUserAddresses.js';
 import saveUserAddresses from './data/saveUserAddresses.js';
+import { MAX_ADDRESSES_PER_USER } from './constants/BotConstants.js';
 
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
@@ -46,6 +47,11 @@ bot.command('add', async (ctx) => {
   const isAddressAlreadyAdded = userAddresses.some((adressData) => adressData.address === lc(address));
   if (isAddressAlreadyAdded) {
     ctx.reply('Address already in your watchlist!');
+    return;
+  }
+
+  if (userAddresses.length >= MAX_ADDRESSES_PER_USER) {
+    ctx.reply(`Error adding address: this bot is already monitoring ${MAX_ADDRESSES_PER_USER} addresses for you, which is the maximum it’s allowed to do. If you have a legitimate use-case for monitoring more addresses than that, please contact us on Discord, Twitter, GitHub`);
     return;
   }
 
