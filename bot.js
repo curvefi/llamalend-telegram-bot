@@ -16,7 +16,8 @@ Here are the available commands:
 
 \\- \`/add 0xADDRESS\`: Start monitoring an address; the bot will notify you of important changes to health ratios of this address’ loans on Curve Lend and crvUSD
 \\- \`/remove 0xADDRESS\`: Stop monitoring an address
-\\- /view: View loan information for all addresses you’ve added
+\\- /view: List all addresses you’ve added
+\\- /check: View loan information for all addresses you’ve added
 \\- /help: List all available commands
 `;
 
