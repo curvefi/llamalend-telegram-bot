@@ -45,7 +45,7 @@ bot.command('add', async (ctx) => {
 
   const isAddressAlreadyAdded = userAddresses.some((adressData) => adressData.address === lc(address));
   if (isAddressAlreadyAdded) {
-    ctx.reply('Address already in watchlist!');
+    ctx.reply('Address already in your watchlist!');
     return;
   }
 
@@ -55,7 +55,36 @@ bot.command('add', async (ctx) => {
   ];
   await saveUserAddresses(telegramUserId, updatedAddresses);
 
-  ctx.reply(`Address \`${address}\` added to watchlist\\!\n\nAll addresses now in watchlist:\n\n${updatedAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+  ctx.reply(`Address \`${address}\` added\\!\n\nAll addresses now in your watchlist:\n\n${updatedAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+});
+
+bot.command('remove', async (ctx) => {
+  const address = ctx.payload.trim();
+  const telegramUserId = ctx.update.message.from.id;
+
+  // Validate Ethereum address
+  const isValidAddress = isAddress(address) && !address.startsWith('XE'); // Exclude ICAP addresses
+  if (!isValidAddress) {
+    ctx.reply('Error removing address: submitted address doens’t look like a valid Ethereum address');
+    return;
+  }
+
+  const userAddresses = await getUserAddresses(telegramUserId);
+
+  const isAddressFound = userAddresses.some((adressData) => adressData.address === lc(address));
+  if (!isAddressFound) {
+    ctx.reply('Error removing address: this address isn’t in your watchlist');
+    return;
+  }
+
+  const updatedAddresses = userAddresses.filter((adressData) => adressData.address !== lc(address));
+  await saveUserAddresses(telegramUserId, updatedAddresses);
+
+  if (updatedAddresses.length > 0) {
+    ctx.reply(`Address \`${address}\` removed\\!\n\nAll addresses now in your watchlist:\n\n${updatedAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+  } else {
+    ctx.reply(`Address \`${address}\` removed\\! Your watchlist is now empty`, TELEGRAM_MESSAGE_OPTIONS);
+  }
 });
 
 bot.command('view', async (ctx) => {
@@ -63,9 +92,9 @@ bot.command('view', async (ctx) => {
   const userAddresses = await getUserAddresses(telegramUserId);
 
   if (userAddresses.length > 0) {
-    ctx.reply(`All addresses in watchlist:\n\n${userAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+    ctx.reply(`All addresses in your watchlist:\n\n${userAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
   } else {
-    ctx.reply('No addresses in watchlist');
+    ctx.reply('Your watchlist is empty');
   }
 });
 
