@@ -1,9 +1,10 @@
 import http from 'serverless-http';
 import { Telegraf } from 'telegraf';
-import AWS from 'aws-sdk';
 import { message } from 'telegraf/filters';
 import { isAddress } from 'ethers';
 import { lc } from './utils/String.js';
+import getUserAddresses from './data/getUserAddresses.js';
+import saveUserAddresses from './data/saveUserAddresses.js';
 
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
@@ -31,6 +32,7 @@ bot.use(async (ctx, next) => {
 
 bot.command('add', async (ctx) => {
   const address = ctx.payload.trim();
+  const telegramUserId = ctx.update.message.from.id;
 
   // Validate Ethereum address
   const isValidAddress = isAddress(address) && !address.startsWith('XE'); // Exclude ICAP addresses
@@ -39,13 +41,8 @@ bot.command('add', async (ctx) => {
     return;
   }
 
-  const dynamodb = new AWS.DynamoDB.DocumentClient();
-  const result = await dynamodb.get({
-    TableName: 'WatchedAddresses',
-    Key: { telegram_user_id: ctx.update.message.from.id },
-  }).promise();
+  const userAddresses = await getUserAddresses(telegramUserId);
 
-  const userAddresses = result?.Item?.addresses ?? [];
   const isAddressAlreadyAdded = userAddresses.some((adressData) => adressData.address === lc(address));
   if (isAddressAlreadyAdded) {
     ctx.reply('Address already in watchlist!');
@@ -56,17 +53,20 @@ bot.command('add', async (ctx) => {
     ...userAddresses,
     { address: lc(address), last_checked_ts: 0 },
   ];
-
-  // Save address for user
-  await dynamodb.put({
-    TableName: 'WatchedAddresses',
-    Item: {
-      telegram_user_id: ctx.update.message.from.id,
-      addresses: updatedAddresses,
-    },
-  }).promise();
+  await saveUserAddresses(telegramUserId, updatedAddresses);
 
   ctx.reply(`Address \`${address}\` added to watchlist\\!\n\nAll addresses now in watchlist:\n\n${updatedAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+});
+
+bot.command('view', async (ctx) => {
+  const telegramUserId = ctx.update.message.from.id;
+  const userAddresses = await getUserAddresses(telegramUserId);
+
+  if (userAddresses.length > 0) {
+    ctx.reply(`All addresses in watchlist:\n\n${userAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+  } else {
+    ctx.reply('No addresses in watchlist');
+  }
 });
 
 bot.command('help', async (ctx) => ctx.reply(HELP_TEXT, TELEGRAM_MESSAGE_OPTIONS));
