@@ -1,0 +1,23 @@
+{
+  "name": "curve-lend-telegram-bot",
+  "description": "Curve Lend Positions Monitoring Telegram Bot",
+  "version": "0.0.1",
+  "main": "echo.js",
+  "type": "module",
+  "scripts": {
+    "serverless": "serverless",
+    "dev": "serverless dev",
+    "release": "serverless deploy",
+    "purge": "serverless remove",
+    "set-webhook": "telegraf -m setWebhook"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "ethers": "^6.13.3",
+    "serverless-http": "^3.1.1",
+    "telegraf": "^4.11.2"
+  },
+  "devDependencies": {
+    "serverless": "^4.4.4"
+  }
+}
