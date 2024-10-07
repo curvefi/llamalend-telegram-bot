@@ -11,6 +11,7 @@ provider:
     lambda: true # optional, enables tracing for all functions (can be true (true equals 'Active') 'Active' or 'PassThrough')
   environment:
     BOT_TOKEN: ${env:BOT_TOKEN}
+    DRPC_KEY: ${env:DRPC_KEY}
   iam:
     role:
       statements:

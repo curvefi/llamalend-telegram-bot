@@ -2,10 +2,17 @@ import http from 'serverless-http';
 import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { isAddress } from 'ethers';
-import { lc } from './utils/String.js';
+import { escapeNumberForTg, lc } from './utils/String.js';
 import getUserAddresses from './data/getUserAddresses.js';
 import saveUserAddresses from './data/saveUserAddresses.js';
 import { MAX_ADDRESSES_PER_USER } from './constants/BotConstants.js';
+import getAllCurveLendingVaults from './utils/data/curve-lending-vaults.js';
+import { arrayToHashmap, flattenArray, removeNulls } from './utils/Array.js';
+import LENDING_CONTROLLER_ABI from './abis/LendingController.json' assert { type: 'json' };
+import LENDING_AMM_ABI from './abis/LendingAmm.json' assert { type: 'json' };
+import multiCall from './utils/Calls.js';
+import groupBy from 'lodash.groupby';
+import { uintToBN } from './utils/Parsing.js';
 
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
@@ -16,8 +23,8 @@ Here are the available commands:
 
 \\- \`/add 0xADDRESS\`: Start monitoring an address; the bot will notify you of important changes to health ratios of this address’ loans on Curve Lend and crvUSD
 \\- \`/remove 0xADDRESS\`: Stop monitoring an address
-\\- /view: List all addresses you’ve added
-\\- /check: View loan information for all addresses you’ve added
+\\- /list: List all addresses you’ve added
+\\- /view: View loan information for all addresses you’ve added
 \\- /help: List all available commands
 `;
 
@@ -94,12 +101,130 @@ bot.command('remove', async (ctx) => {
   }
 });
 
-bot.command('view', async (ctx) => {
+bot.command('list', async (ctx) => {
   const telegramUserId = ctx.update.message.from.id;
   const userAddresses = await getUserAddresses(telegramUserId);
 
   if (userAddresses.length > 0) {
     ctx.reply(`All addresses in your watchlist:\n\n${userAddresses.map(({ address }) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+  } else {
+    ctx.reply('Your watchlist is empty');
+  }
+});
+
+bot.command('view', async (ctx) => {
+  const telegramUserId = ctx.update.message.from.id;
+  const userAddresses = await getUserAddresses(telegramUserId);
+
+  if (userAddresses.length > 0) {
+    const curveLendingVaults = await getAllCurveLendingVaults('ethereum');
+
+    const userLendingData = await multiCall(flattenArray(flattenArray(
+      curveLendingVaults.map((lendingVault) => {
+        const {
+          controllerAddress,
+          ammAddress,
+          address: lendingVaultAddress,
+        } = lendingVault;
+
+        return (
+          userAddresses.map(({ address: userAddress }) => [{
+            address: controllerAddress,
+            abi: LENDING_CONTROLLER_ABI,
+            methodName: 'loan_exists',
+            params: [userAddress],
+            metaData: { userAddress, lendingVaultAddress, type: 'doesLoanExist' },
+          }, {
+            address: controllerAddress,
+            abi: LENDING_CONTROLLER_ABI,
+            methodName: 'user_state',
+            params: [userAddress],
+            metaData: { userAddress, lendingVaultAddress, type: 'userState' },
+          }, {
+            address: controllerAddress,
+            abi: LENDING_CONTROLLER_ABI,
+            methodName: 'user_prices',
+            params: [userAddress],
+            metaData: { userAddress, lendingVaultAddress, type: 'priceRange' },
+          }, {
+            address: controllerAddress,
+            abi: LENDING_CONTROLLER_ABI,
+            methodName: 'health',
+            params: [userAddress],
+            metaData: { userAddress, lendingVaultAddress, type: 'health' },
+          }, {
+            address: ammAddress,
+            abi: LENDING_AMM_ABI,
+            methodName: 'read_user_tick_numbers',
+            params: [userAddress],
+            metaData: { userAddress, lendingVaultAddress, type: 'bandRange' },
+          }, {
+            address: ammAddress,
+            abi: LENDING_AMM_ABI,
+            methodName: 'active_band',
+            metaData: { userAddress, lendingVaultAddress, type: 'currentAmmBand' },
+          }])
+        );
+      })
+    )));
+
+    const structuredLendingData = arrayToHashmap(
+      Object.entries(groupBy(userLendingData, 'metaData.userAddress')).map(([userAddress, userData]) => [
+        userAddress,
+        arrayToHashmap(
+          Object.entries(groupBy(userData, 'metaData.lendingVaultAddress')).map(([lendingVaultAddress, lendingVaultData]) => [
+            lendingVaultAddress,
+            arrayToHashmap(
+              Object.entries(groupBy(lendingVaultData, 'metaData.type')).map(([dataType, [{ data, metaData }]]) => {
+                const vaultData = curveLendingVaults.find(({ address }) => address === metaData.lendingVaultAddress);
+
+                return [
+                  dataType,
+                  (
+                    dataType === 'health' ? uintToBN(data, 18).dp(6) :
+                      dataType === 'bandRange' ? data.map((n) => Number(n)).sort() : // Always asc order
+                        dataType === 'currentAmmBand' ? Number(data) :
+                          dataType === 'priceRange' ? data.map((price, i) => uintToBN(price, vaultData.assets.collateral.decimals).dp(6)) :
+                            dataType === 'userState' ? {
+                              atRiskCollat: uintToBN(data[0], vaultData.assets.collateral.decimals).dp(6),
+                              atRiskBorrowed: uintToBN(data[1], vaultData.assets.borrowed.decimals).dp(6),
+                              debt: uintToBN(data[2], vaultData.assets.borrowed.decimals).dp(6),
+                              bandCount: Number(data[3]),
+                            } :
+                              data
+                  ),
+                ];
+              })
+            ),
+          ]).filter(([, { doesLoanExist }]) => doesLoanExist === true)
+        ),
+      ])
+    );
+
+    ctx.reply(`
+      Your positions:
+      ${Object.entries(structuredLendingData).map(([userAddress, addressPositions]) => (`
+\\- On \`${userAddress}\`: ${Object.entries(addressPositions).length === 0 ?
+        'None' :
+        Object.entries(addressPositions).map(([lendingVaultAddress, positionData]) => {
+          const vaultData = curveLendingVaults.find(({ address }) => address === lendingVaultAddress);
+          const isInHardLiq = positionData.health.lte(0);
+          const isInSoftLiq = !isInHardLiq && positionData.currentAmmBand <= positionData.bandRange[1];
+
+          const textLines = removeNulls([
+            `State: ${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'all good!'}`,
+            (isInHardLiq || isInSoftLiq) ? `Health: ${escapeNumberForTg(positionData.health.times(100).dp(4))}%` : null,
+            (isInHardLiq || isInSoftLiq) ? `Currently at risk: ${escapeNumberForTg(positionData.userState.atRiskCollat.dp(4))} ${vaultData.assets.collateral.symbol} and ${escapeNumberForTg(positionData.userState.atRiskBorrowed.dp(4))} ${vaultData.assets.borrowed.symbol}` : null,
+            `Your collateral’s band range: ${positionData.bandRange[0]}→${positionData.bandRange[1]} _\\(approx collateral price range these bands translate to: ${escapeNumberForTg(positionData.priceRange[0].dp(4))}→${escapeNumberForTg(positionData.priceRange[1].dp(4))}\\)_`,
+            `Current AMM band: ${positionData.currentAmmBand}`,
+          ]);
+
+          return (`
+  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}*:
+      ${textLines.join("\n      ")}`);
+        })}
+      `)).join("")}
+    `, TELEGRAM_MESSAGE_OPTIONS);
   } else {
     ctx.reply('Your watchlist is empty');
   }
