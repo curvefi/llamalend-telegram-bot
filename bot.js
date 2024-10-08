@@ -215,17 +215,21 @@ bot.command('view', async (ctx) => {
         Object.entries(addressPositions).map(([lendingVaultAddress, positionData]) => {
           const vaultData = allMarkets.find(({ address }) => address === lendingVaultAddress);
           const isInHardLiq = positionData.health.lt(0);
-          const isInSoftLiq = !isInHardLiq && positionData.currentAmmBand <= positionData.bandRange[1];
+          const isInSoftLiq = (
+            !isInHardLiq &&
+            positionData.currentAmmBand >= positionData.bandRange[0] &&
+            positionData.currentAmmBand <= positionData.bandRange[1]
+          );
 
           const textLines = removeNulls([
-            `State: ${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'all good!'}`,
-            (isInHardLiq || isInSoftLiq) ? `Health: ${escapeNumberForTg(positionData.health.times(100).dp(4))}%` : null,
-            (isInHardLiq || isInSoftLiq) ? `Currently at risk: ${escapeNumberForTg(positionData.userState.atRiskCollat.dp(4))} ${vaultData.assets.collateral.symbol} and ${escapeNumberForTg(positionData.userState.atRiskBorrowed.dp(4))} ${vaultData.assets.borrowed.symbol}` : null,
-            `Your collateral’s band range: ${escapeNumberForTg(positionData.bandRange[0])}→${escapeNumberForTg(positionData.bandRange[1])} _\\(approx collateral price range these bands translate to: ${escapeNumberForTg(positionData.priceRange[0].dp(4))}→${escapeNumberForTg(positionData.priceRange[1].dp(4))}\\)_`,
-            `Current AMM band: ${escapeNumberForTg(positionData.currentAmmBand)}`,
+            `State: *${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'healthy ✅'}*`,
+            (isInHardLiq || isInSoftLiq) ? `Health: *${escapeNumberForTg(positionData.health.times(100).dp(4))}%*` : null,
+            (isInHardLiq || isInSoftLiq) ? `Currently at risk: *${escapeNumberForTg(positionData.userState.atRiskCollat.dp(4))} ${vaultData.assets.collateral.symbol} and ${escapeNumberForTg(positionData.userState.atRiskBorrowed.dp(4))} ${vaultData.assets.borrowed.symbol}*` : null,
+            `Your collateral’s band range: *${escapeNumberForTg(positionData.bandRange[0])}→${escapeNumberForTg(positionData.bandRange[1])}* _\\(approx\\. corresponding collateral price range: *${escapeNumberForTg(positionData.priceRange[0].dp(2))}→${escapeNumberForTg(positionData.priceRange[1].dp(2))}*\\)_`,
+            `Current AMM band: *${escapeNumberForTg(positionData.currentAmmBand)}*`,
           ]);
 
-          return (`\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? 'Curve Lend' : 'crvUSD market'}\\):\n      ${textLines.join("\n      ")}`);
+          return (`\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? 'Curve Lend' : 'crvUSD market'}\\):\n     ${textLines.join("\n     ")}`);
         })}
       `)).join("")}
     `, TELEGRAM_MESSAGE_OPTIONS);
