@@ -13,6 +13,7 @@ import LENDING_AMM_ABI from './abis/LendingAmm.json' assert { type: 'json' };
 import multiCall from './utils/Calls.js';
 import groupBy from 'lodash.groupby';
 import { uintToBN } from './utils/Parsing.js';
+import getAllCrvusdMarkets from './utils/data/crvusd-markets.js';
 
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
@@ -118,9 +119,14 @@ bot.command('view', async (ctx) => {
 
   if (userAddresses.length > 0) {
     const curveLendingVaults = await getAllCurveLendingVaults('ethereum');
+    const crvusdMarkets = await getAllCrvusdMarkets();
+    const allMarkets = [
+      ...curveLendingVaults.map((o) => ({ ...o, marketType: 'lend' })),
+      ...crvusdMarkets.map((o) => ({ ...o, marketType: 'crvusd' })),
+    ];
 
     const userLendingData = await multiCall(flattenArray(flattenArray(
-      curveLendingVaults.map((lendingVault) => {
+      allMarkets.map((lendingVault) => {
         const {
           controllerAddress,
           ammAddress,
@@ -176,7 +182,7 @@ bot.command('view', async (ctx) => {
             lendingVaultAddress,
             arrayToHashmap(
               Object.entries(groupBy(lendingVaultData, 'metaData.type')).map(([dataType, [{ data, metaData }]]) => {
-                const vaultData = curveLendingVaults.find(({ address }) => address === metaData.lendingVaultAddress);
+                const vaultData = allMarkets.find(({ address }) => address === metaData.lendingVaultAddress);
 
                 return [
                   dataType,
@@ -207,21 +213,19 @@ bot.command('view', async (ctx) => {
 \\- On \`${userAddress}\`: ${Object.entries(addressPositions).length === 0 ?
         'None' :
         Object.entries(addressPositions).map(([lendingVaultAddress, positionData]) => {
-          const vaultData = curveLendingVaults.find(({ address }) => address === lendingVaultAddress);
-          const isInHardLiq = positionData.health.lte(0);
+          const vaultData = allMarkets.find(({ address }) => address === lendingVaultAddress);
+          const isInHardLiq = positionData.health.lt(0);
           const isInSoftLiq = !isInHardLiq && positionData.currentAmmBand <= positionData.bandRange[1];
 
           const textLines = removeNulls([
             `State: ${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'all good!'}`,
             (isInHardLiq || isInSoftLiq) ? `Health: ${escapeNumberForTg(positionData.health.times(100).dp(4))}%` : null,
             (isInHardLiq || isInSoftLiq) ? `Currently at risk: ${escapeNumberForTg(positionData.userState.atRiskCollat.dp(4))} ${vaultData.assets.collateral.symbol} and ${escapeNumberForTg(positionData.userState.atRiskBorrowed.dp(4))} ${vaultData.assets.borrowed.symbol}` : null,
-            `Your collateral’s band range: ${positionData.bandRange[0]}→${positionData.bandRange[1]} _\\(approx collateral price range these bands translate to: ${escapeNumberForTg(positionData.priceRange[0].dp(4))}→${escapeNumberForTg(positionData.priceRange[1].dp(4))}\\)_`,
-            `Current AMM band: ${positionData.currentAmmBand}`,
+            `Your collateral’s band range: ${escapeNumberForTg(positionData.bandRange[0])}→${escapeNumberForTg(positionData.bandRange[1])} _\\(approx collateral price range these bands translate to: ${escapeNumberForTg(positionData.priceRange[0].dp(4))}→${escapeNumberForTg(positionData.priceRange[1].dp(4))}\\)_`,
+            `Current AMM band: ${escapeNumberForTg(positionData.currentAmmBand)}`,
           ]);
 
-          return (`
-  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}*:
-      ${textLines.join("\n      ")}`);
+          return (`\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? 'Curve Lend' : 'crvUSD market'}\\):\n      ${textLines.join("\n      ")}`);
         })}
       `)).join("")}
     `, TELEGRAM_MESSAGE_OPTIONS);

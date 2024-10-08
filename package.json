@@ -16,6 +16,7 @@
     "bignumber.js": "^9.1.2",
     "ethers": "^6.13.3",
     "exponential-backoff": "^3.1.1",
+    "form-urlencoded": "^6.1.5",
     "lodash.groupby": "^4.6.0",
     "memoizee": "^0.4.17",
     "serverless-http": "^3.1.1",
