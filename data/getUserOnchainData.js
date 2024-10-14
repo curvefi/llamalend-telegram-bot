@@ -26,7 +26,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
       } = lendingVault;
 
       return (
-        userAddresses.map(({ address: userAddress }) => [{
+        userAddresses.map((userAddress) => [{
           address: controllerAddress,
           abi: LENDING_CONTROLLER_ABI,
           methodName: 'loan_exists',
@@ -77,7 +77,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
       userAddress,
       arrayToHashmap(
         Object.entries(groupBy(userData, 'metaData.lendingVaultAddress')).map(([lendingVaultAddress, lendingVaultData]) => [
-          lendingVaultAddress,
+          `${network}-${lendingVaultAddress}`,
           arrayToHashmap(
             Object.entries(groupBy(lendingVaultData, 'metaData.type')).map(([dataType, [{ data, metaData }]]) => {
               const vaultData = allMarkets.find(({ address }) => address === metaData.lendingVaultAddress);
@@ -102,7 +102,8 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
           ),
         ])
           .filter(([, { doesLoanExist }]) => doesLoanExist === true)
-          .map(([lendingVaultAddress, positionData]) => {
+          .map(([lendingVaultKey, positionData]) => {
+            const [network, lendingVaultAddress] = lendingVaultKey.split('-');
             const vaultData = allMarkets.find(({ address }) => address === lendingVaultAddress);
             const isInHardLiq = positionData.health.lt(0);
             const isInSoftLiq = (
@@ -121,7 +122,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
 
             const textPositionRepresentation = `\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? `Curve Lend on ${vaultData.network}` : 'crvUSD market'}\\):\n     ${textLines.join("\n     ")}`;
 
-            return [lendingVaultAddress, {
+            return [lendingVaultKey, {
               ...positionData,
               isInHardLiq,
               isInSoftLiq,
@@ -136,7 +137,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
   return structuredLendingData;
 };
 
-const getUserLendingData = async (userAddresses) => (
+const getUserOnchainData = async (userAddresses) => (
   flattenArray(await Promise.all(ALL_NETWORK_IDS.map(async (network) => Object.entries(await getUserLendingDataForNetwork(userAddresses, network)))))
     .reduce((accu, [userAddress, positionData]) => {
       const userPositionData = accu[userAddress] ?? {};
@@ -151,4 +152,4 @@ const getUserLendingData = async (userAddresses) => (
     }, {})
 );
 
-export default getUserLendingData;
+export default getUserOnchainData;
