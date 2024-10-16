@@ -5,7 +5,6 @@ import { DeleteItemCommand } from 'dynamodb-toolbox/entity/actions/delete';
 
 const deleteUser = async ({
   telegramUserId,
-  newAddress,
 }) => {
   await UserEntity.build(DeleteItemCommand)
     .key({ telegram_user_id: telegramUserId })

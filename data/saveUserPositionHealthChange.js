@@ -23,7 +23,7 @@ const saveUserPositionHealthChange = async ({
       ])),
   };
 
-  console.log('itemdesc', itemdesc)
+  // console.log('itemdesc', itemdesc)
   const { Attributes } = await UserEntity.build(UpdateItemCommand)
     .item(itemdesc)
     .options({ returnValues: 'UPDATED_NEW' })

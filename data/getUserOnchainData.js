@@ -113,7 +113,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
             );
 
             const textLines = removeNulls([
-              `State: *${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'healthy ✅'}*`,
+              `State: *${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'Healthy ✅'}*`,
               (isInHardLiq || isInSoftLiq) ? `Health: *${escapeNumberForTg(positionData.health.times(100).dp(4))}%*` : null,
               (isInHardLiq || isInSoftLiq) ? `Currently at risk: *${escapeNumberForTg(positionData.userState.atRiskCollat.dp(4))} ${vaultData.assets.collateral.symbol} and ${escapeNumberForTg(positionData.userState.atRiskBorrowed.dp(4))} ${vaultData.assets.borrowed.symbol}*` : null,
               `Your collateral’s band range: *${escapeNumberForTg(positionData.bandRange[0])}→${escapeNumberForTg(positionData.bandRange[1])}* _\\(approx\\. corresponding collateral price range: *${escapeNumberForTg(positionData.priceRange[0].dp(2))}→${escapeNumberForTg(positionData.priceRange[1].dp(2))}*\\)_`,

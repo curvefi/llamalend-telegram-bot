@@ -12,6 +12,14 @@ const sleepUntil = async (conditionFn, checkInterval = 200) => {
   }
 };
 
+const sequentialPromiseSome = async (array, asyncFn) => {
+  for (const item of array) {
+    if (await asyncFn(item) === true) return true;
+  }
+
+  return false;
+};
+
 const sequentialPromiseMap = async (array, asyncFn, chunkSize) => {
   const results = [];
   let i = 0;
@@ -75,6 +83,7 @@ const runConcurrentlyAtMost = async (asyncFns, atMost) => {
 };
 
 export {
+  sequentialPromiseSome,
   sequentialPromiseMap,
   sequentialPromiseFlatMap,
   sequentialPromiseReduce,

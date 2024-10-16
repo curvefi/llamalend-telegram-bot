@@ -1,5 +1,5 @@
-import AWS from 'aws-sdk';
+import { SQSClient } from '@aws-sdk/client-sqs';
 
-const sqs = new AWS.SQS();
+const sqs = new SQSClient({});
 
 export default sqs;

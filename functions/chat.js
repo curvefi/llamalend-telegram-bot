@@ -10,6 +10,7 @@ import addUserAddress from '../data/addUserAddress.js';
 import deleteUser from '../data/deleteUser.js';
 import removeUserAddress from '../data/removeUserAddress.js';
 import { bot, HELP_TEXT, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
+import notifyNewAddressAdded from '../utils/queues/sns-publisher.js';
 
 // Middleware
 bot.use(async (ctx, next) => {
@@ -51,6 +52,8 @@ bot.command('add', async (ctx) => {
   }
 
   console.log('updatedAddresses', updatedAddresses)
+
+  await notifyNewAddressAdded({ telegramUserId, newAddress: lc(address) });
 
   ctx.reply(`Address \`${address}\` added\\!\n\nAll addresses now in your watchlist:\n\n${Object.keys(updatedAddresses).map((address) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
 });

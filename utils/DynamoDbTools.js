@@ -4,10 +4,9 @@ import { Entity } from 'dynamodb-toolbox/entity';
 import { schema } from 'dynamodb-toolbox/schema';
 import { string } from 'dynamodb-toolbox/attributes/string';
 import { number } from 'dynamodb-toolbox/attributes/number';
-import { list } from 'dynamodb-toolbox/attributes/list';
-import { map } from 'dynamodb-toolbox/attributes/map';
-import { record } from 'dynamodb-toolbox/attributes/record'
+import { record } from 'dynamodb-toolbox/attributes/record';
 import { POSITION_HEALTH_STATUS } from '../constants/PositionsConstants.js';
+import { lc } from './String.js';
 
 const WatchedAddressesTable = new Table({
   documentClient,
@@ -37,7 +36,33 @@ const UserEntity = new Entity({
   timestamps: false,
 });
 
+const NewlyAddedAddressesTable = new Table({
+  documentClient,
+  name: 'NewlyAddedAddresses',
+  partitionKey: {
+    name: 'user_id_and_address',
+    type: 'string',
+  },
+});
+
+const NEWLY_ADDED_ADDRESS_ENTITY_SCHEMA = schema({
+  user_id_and_address: string().key(),
+  added_ts: number(),
+});
+
+const NewlyAddedAddressEntity = new Entity({
+  name: 'NewlyAddedAddress',
+  table: NewlyAddedAddressesTable,
+  schema: NEWLY_ADDED_ADDRESS_ENTITY_SCHEMA,
+  timestamps: false,
+});
+
+const userIdAndAddressKeyFormatter = (userId, address) => lc(`${userId}-${address}`);
+
 export {
   WatchedAddressesTable,
   UserEntity,
+  NewlyAddedAddressesTable,
+  NewlyAddedAddressEntity,
+  userIdAndAddressKeyFormatter,
 };

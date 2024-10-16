@@ -1,10 +1,11 @@
-import { DEFAULT_POSITION_OBJECT, POSITION_HEALTH_STATUS } from '../constants/PositionsConstants.js';
+import { DEFAULT_POSITION_OBJECT } from '../constants/PositionsConstants.js';
+import getAllNewlyAddedAddresses from '../data/getAllNewlyAddedAddresses.js';
 import getUserOnchainData from '../data/getUserOnchainData.js';
 import getUsersData from '../data/getUsersData.js';
 import saveUserPositionHealthChange from '../data/saveUserPositionHealthChange.js';
 import updateUsersLastCheckedTs from '../data/updateUsersLastCheckedTs.js';
-// import saveUserAddresses from '../data/saveUserAddresses.js';
 import { flattenArray, removeNulls, sum, uniq } from '../utils/Array.js';
+import isMatureUserAddress from '../utils/data/is-mature-user-address.js';
 import { bot, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 
 export const handler = async (event) => {
@@ -13,10 +14,19 @@ export const handler = async (event) => {
   console.log('userIds', userIds)
 
   const uniqueUserIds = uniq(userIds);
-  const usersData = await getUsersData(uniqueUserIds);
 
+  const [
+    usersData,
+    allNewlyAddedAddresses,
+  ] = await Promise.all([
+    getUsersData(uniqueUserIds),
+    getAllNewlyAddedAddresses(),
+  ]);
   console.log('usersData', usersData)
-  const allAddresses = uniq(flattenArray(usersData.map(({ addresses }) => Object.keys(addresses))));
+
+  const allAddresses = uniq(flattenArray(usersData.map(({ telegram_user_id, addresses }) => (
+    Object.keys(addresses).filter((address) => isMatureUserAddress(telegram_user_id, address, allNewlyAddedAddresses))
+  ))));
   console.log('allAddresses', allAddresses)
 
   const addressesOnchainData = await getUserOnchainData(allAddresses);
@@ -24,6 +34,9 @@ export const handler = async (event) => {
 
   for (const { telegram_user_id: telegramUserId, addresses } of usersData) {
     const changedAddressesPositions = removeNulls(Object.entries(addresses).map(([address, positions]) => {
+      // Don’t look at addresses that have already been filtered out of `allAddresses`
+      if (!allAddresses.includes(address)) return null;
+
       const onchainPositions = Object.values(addressesOnchainData[address]);
 
       // This will not detect if user closed a position, but that's not the purpose of this bot

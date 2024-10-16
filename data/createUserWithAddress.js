@@ -1,7 +1,7 @@
-import { DEFAULT_ADDRESS_OBJECT } from '../constants/PositionsConstants.js';
 import { lc } from '../utils/String.js';
-import { UserEntity } from '../utils/DynamoDbTools.js';
+import { NewlyAddedAddressEntity, UserEntity, userIdAndAddressKeyFormatter } from '../utils/DynamoDbTools.js';
 import { PutItemCommand } from 'dynamodb-toolbox/entity/actions/put';
+import { getNowTimestamp } from '../utils/Date.js';
 
 const createUserWithAddress = async ({
   telegramUserId,
@@ -15,6 +15,13 @@ const createUserWithAddress = async ({
     .item({
       telegram_user_id: telegramUserId,
       addresses,
+    })
+    .send();
+
+  await NewlyAddedAddressEntity.build(PutItemCommand)
+    .item({
+      user_id_and_address: userIdAndAddressKeyFormatter(telegramUserId, newAddress),
+      added_ts: getNowTimestamp(),
     })
     .send();
 

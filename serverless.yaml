@@ -27,6 +27,16 @@ provider:
             - 'dynamodb:UpdateItem'
             - 'dynamodb:DeleteItem'
           Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/WatchedAddresses
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:PutItem'
+            - 'dynamodb:Scan*'
+            - 'dynamodb:DeleteItem'
+          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/NewlyAddedAddresses
+        - Effect: "Allow"
+          Resource: "*"
+          Action:
+            - "sns:*"
 
 functions:
   echo:
@@ -42,7 +52,18 @@ functions:
     name: ${sls:stage}-curve-lend-telegram-bot-sqs-publisher
     events:
       - schedule:
-          rate: rate(1 minute)
+          rate: rate(5 minutes)
+  new-address-worker:
+    handler: functions/sns-worker.handler
+    name: ${sls:stage}-curve-lend-telegram-bot-sns-worker
+    events:
+      - sns: dispatch-new-address
+  new-address-list-trimmer:
+    handler: functions/new-address-list-trimmer.handler
+    name: ${sls:stage}-curve-lend-telegram-bot-new-address-list-trimmer
+    events:
+      - schedule:
+          rate: rate(1 hour)
 
 constructs:
   address-queue-worker:
@@ -68,6 +89,19 @@ resources:
             AttributeType: N
         KeySchema:
           - AttributeName: telegram_user_id
+            KeyType: HASH
+        SSESpecification:
+          SSEEnabled: true
+    NewlyAddedAddresses:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: NewlyAddedAddresses
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: user_id_and_address
+            AttributeType: S
+        KeySchema:
+          - AttributeName: user_id_and_address
             KeyType: HASH
         SSESpecification:
           SSEEnabled: true
