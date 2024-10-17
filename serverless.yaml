@@ -70,6 +70,7 @@ constructs:
     type: queue
     worker:
       handler: functions/sqs-worker.handler
+      name: ${sls:stage}-curve-lend-telegram-bot-address-queue-worker
       timeout: 20
     alarm:  ${env:SQS_DEAD_LETTER_QUEUE_NOTIFICATION_EMAIL}
     encryption: 'kmsManaged'

@@ -42,6 +42,6 @@ export const handler = async (event) => {
       *Found ${unhealthyPositions.length > 1 ? 'positions' : 'position'} with a health status deserving your attention on the address you’ve just started monitoring \\(\`${shortAddress(newAddress)}\`\\):*
       ${Object.values(unhealthyPositions).map(({ textPositionRepresentation }) => textPositionRepresentation)}
       `;
-    bot.telegram.sendMessage(telegramUserId, text, TELEGRAM_MESSAGE_OPTIONS);
+    await bot.telegram.sendMessage(telegramUserId, text, TELEGRAM_MESSAGE_OPTIONS);
   }
 };

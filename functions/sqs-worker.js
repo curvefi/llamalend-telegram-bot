@@ -78,7 +78,7 @@ export const handler = async (event) => {
         ${changedAddressesPositions.map(({ address: userAddress, changedPositions }) => (`\n\\- On \`${userAddress}\`: ${Object.values(changedPositions).map(({ textPositionRepresentation }) => textPositionRepresentation)}
         `)).join("")}
       `;
-      bot.telegram.sendMessage(telegramUserId, text, TELEGRAM_MESSAGE_OPTIONS);
+      await bot.telegram.sendMessage(telegramUserId, text, TELEGRAM_MESSAGE_OPTIONS);
 
       await saveUserPositionHealthChange({ telegramUserId, changedAddressesPositions });
     }
