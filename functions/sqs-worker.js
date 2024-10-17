@@ -11,7 +11,6 @@ import { bot, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 export const handler = async (event) => {
   const userIds = event.Records.map(({ body }) => JSON.parse(body).telegramUserId);
   if (userIds.length === 0) return;
-  console.log('userIds', userIds)
 
   const uniqueUserIds = uniq(userIds);
 
@@ -22,15 +21,12 @@ export const handler = async (event) => {
     getUsersData(uniqueUserIds),
     getAllNewlyAddedAddresses(),
   ]);
-  console.log('usersData', usersData)
 
   const allAddresses = uniq(flattenArray(usersData.map(({ telegram_user_id, addresses }) => (
     Object.keys(addresses).filter((address) => isMatureUserAddress(telegram_user_id, address, allNewlyAddedAddresses))
   ))));
-  console.log('allAddresses', allAddresses)
 
   const addressesOnchainData = await getUserOnchainData(allAddresses);
-  // console.log('addressesOnchainData', addressesOnchainData)
 
   for (const { telegram_user_id: telegramUserId, addresses } of usersData) {
     const changedAddressesPositions = removeNulls(Object.entries(addresses).map(([address, positions]) => {
@@ -53,7 +49,6 @@ export const handler = async (event) => {
             last_checked_state: positions[vaultData.address],
           } : {})
         };
-        // console.log('prevPositionData', prevPositionData);
         const lastCheckedState = prevPositionData.last_checked_state;
         const currentState = (
           isInHardLiq ? 'HARD' :
@@ -76,7 +71,6 @@ export const handler = async (event) => {
 
       return { address, changedPositions };
     }));
-    console.log('changedAddressesPositions', changedAddressesPositions)
 
     if (changedAddressesPositions.length > 0) {
       const text = `

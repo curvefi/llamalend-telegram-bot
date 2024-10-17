@@ -9,7 +9,6 @@ import isMatureUserAddress from '../utils/data/is-mature-user-address.js';
 const STALE_DELAY = 4 * 60;
 
 export const handler = async (event, context) => {
-  console.log('publisher event')
   const nowTs = getNowTimestamp();
 
   const [
@@ -31,8 +30,6 @@ export const handler = async (event, context) => {
       hasMatureAddresses
     );
   }).map(({ telegram_user_id }) => telegram_user_id);
-
-  console.log('allUsersToCheck', allUsersToCheck)
 
   await sequentialPromiseMap(allUsersToCheck, async (userIdsChunk) => (
     sqs.send(new SendMessageBatchCommand({

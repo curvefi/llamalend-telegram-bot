@@ -5,11 +5,9 @@ import { bot, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 
 export const handler = async (event) => {
   const { telegramUserId, newAddress } = JSON.parse(event.Records[0].Sns.Message);
-  console.log('SNS telegramUserId, newAddress', telegramUserId, newAddress)
 
   const { [newAddress]: addressOnchainData } = await getUserOnchainData([newAddress]);
   const onchainPositions = Object.values(addressOnchainData);
-  console.log('onchainPositions', onchainPositions)
 
   const foundPositions = onchainPositions.map(({
     isInHardLiq,
@@ -30,7 +28,6 @@ export const handler = async (event) => {
     };
   });
 
-  console.log('foundPositions', foundPositions)
   await saveUserPositionHealthChange({
     telegramUserId,
     changedAddressesPositions: [{

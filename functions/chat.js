@@ -31,7 +31,6 @@ bot.command('add', async (ctx) => {
 
   const userData = await getUserData(telegramUserId);
   const userAddresses = Object.keys(userData);
-  console.log('userAddresses', userAddresses)
 
   const isAddressAlreadyAdded = userAddresses.includes(lc(address));
   if (isAddressAlreadyAdded) {
@@ -50,8 +49,6 @@ bot.command('add', async (ctx) => {
   } else {
     updatedAddresses = await addUserAddress({ telegramUserId, newAddress: lc(address) });
   }
-
-  console.log('updatedAddresses', updatedAddresses)
 
   await notifyNewAddressAdded({ telegramUserId, newAddress: lc(address) });
 
