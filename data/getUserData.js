@@ -6,7 +6,10 @@ const getUserData = async (telegramUserId) => {
     .key({ telegram_user_id: telegramUserId })
     .send();
 
-  const userData = Item?.addresses ?? {};
+  const userData = {
+    addresses: Item?.addresses ?? {},
+    last_checked_ts: Item?.last_checked_ts ?? 0,
+  };
 
   return userData;
 };

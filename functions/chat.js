@@ -11,6 +11,8 @@ import deleteUser from '../data/deleteUser.js';
 import removeUserAddress from '../data/removeUserAddress.js';
 import { bot, HELP_TEXT, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 import notifyNewAddressAdded from '../utils/queues/sns-publisher.js';
+import { removeNulls } from '../utils/Array.js';
+import { getHumanReadableTimeDifference } from '../utils/Date.js';
 
 // Middleware
 bot.use(async (ctx, next) => {
@@ -30,7 +32,7 @@ bot.command('add', async (ctx) => {
   }
 
   const userData = await getUserData(telegramUserId);
-  const userAddresses = Object.keys(userData);
+  const userAddresses = Object.keys(userData.addresses);
 
   const isAddressAlreadyAdded = userAddresses.includes(lc(address));
   if (isAddressAlreadyAdded) {
@@ -67,7 +69,7 @@ bot.command('remove', async (ctx) => {
   }
 
   const userData = await getUserData(telegramUserId);
-  const userAddresses = Object.keys(userData);
+  const userAddresses = Object.keys(userData.addresses);
 
   const isAddressFound = userAddresses.includes(lc(address));
   if (!isAddressFound) {
@@ -89,10 +91,10 @@ bot.command('remove', async (ctx) => {
 bot.command('list', async (ctx) => {
   const telegramUserId = ctx.update.message.from.id;
   const userData = await getUserData(telegramUserId);
-  const userAddresses = Object.keys(userData);
+  const userAddresses = Object.keys(userData.addresses);
 
   if (userAddresses.length > 0) {
-    ctx.reply(`All addresses in your watchlist:\n\n${userAddresses.map((address) => `\\- \`${address}\``).join("\n")}`, TELEGRAM_MESSAGE_OPTIONS);
+    ctx.reply(`All addresses in your watchlist:\n\n${userAddresses.map((address) => `\\- \`${address}\``).join("\n")}${userData.last_checked_ts > 0 ? `\n\nPositions on these addresses last checked ${getHumanReadableTimeDifference(userData.last_checked_ts)} ago` : ''}`, TELEGRAM_MESSAGE_OPTIONS);
   } else {
     ctx.reply('Your watchlist is empty');
   }
@@ -101,7 +103,7 @@ bot.command('list', async (ctx) => {
 bot.command('view', async (ctx) => {
   const telegramUserId = ctx.update.message.from.id;
   const userData = await getUserData(telegramUserId);
-  const userAddresses = Object.keys(userData);
+  const userAddresses = Object.keys(userData.addresses);
 
   if (userAddresses.length > 0) {
     const userLendingData = await getUserOnchainData(userAddresses);
@@ -111,7 +113,7 @@ bot.command('view', async (ctx) => {
       ${Object.entries(userLendingData).map(([userAddress, addressPositions]) => (`\n\\- On \`${userAddress}\`: ${Object.entries(addressPositions).length === 0 ?
       'None' :
       Object.values(addressPositions).map(({ textPositionRepresentation }) => textPositionRepresentation)}
-      `)).join("")}
+      `)).join('')}
     `, TELEGRAM_MESSAGE_OPTIONS);
   } else {
     ctx.reply('Your watchlist is empty');
