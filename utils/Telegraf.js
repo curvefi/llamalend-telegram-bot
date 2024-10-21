@@ -1,6 +1,10 @@
 import { Telegraf } from 'telegraf';
 
-const token = process.env.BOT_TOKEN;
+const token = (
+  process.env.SLS_STAGE === 'production' ?
+    process.env.BOT_TOKEN_PROD :
+    process.env.BOT_TOKEN_DEV
+);
 const bot = new Telegraf(token);
 
 const TELEGRAM_MESSAGE_OPTIONS = {

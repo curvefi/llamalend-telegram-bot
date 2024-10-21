@@ -10,10 +10,12 @@ provider:
   tracing:
     lambda: true # optional, enables tracing for all functions (can be true (true equals 'Active') 'Active' or 'PassThrough')
   environment:
-    BOT_TOKEN: ${env:BOT_TOKEN}
+    BOT_TOKEN_DEV: ${env:BOT_TOKEN_DEV}
+    BOT_TOKEN_PROD: ${env:BOT_TOKEN_PROD}
     DRPC_KEY: ${env:DRPC_KEY}
     AWS_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID}
     SQS_URL: ${construct:address-queue-worker.queueUrl}
+    SLS_STAGE: ${sls:stage}
   iam:
     role:
       statements:
@@ -26,13 +28,13 @@ provider:
             - 'dynamodb:Query*'
             - 'dynamodb:UpdateItem'
             - 'dynamodb:DeleteItem'
-          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/WatchedAddresses
+          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stage}-WatchedAddresses
         - Effect: 'Allow'
           Action:
             - 'dynamodb:PutItem'
             - 'dynamodb:Scan*'
             - 'dynamodb:DeleteItem'
-          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/NewlyAddedAddresses
+          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stage}-NewlyAddedAddresses
         - Effect: "Allow"
           Resource: "*"
           Action:
@@ -59,7 +61,7 @@ functions:
     name: ${sls:stage}-curve-lend-telegram-bot-sns-worker
     logRetentionInDays: 7
     events:
-      - sns: dispatch-new-address
+      - sns: ${sls:stage}-dispatch-new-address
   new-address-list-trimmer:
     handler: functions/new-address-list-trimmer.handler
     name: ${sls:stage}-curve-lend-telegram-bot-new-address-list-trimmer
@@ -87,7 +89,7 @@ resources:
     WatchedAddresses:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: WatchedAddresses
+        TableName: ${sls:stage}-WatchedAddresses
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: telegram_user_id
@@ -100,7 +102,7 @@ resources:
     NewlyAddedAddresses:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: NewlyAddedAddresses
+        TableName: ${sls:stage}-NewlyAddedAddresses
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: user_id_and_address

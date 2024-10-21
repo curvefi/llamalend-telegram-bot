@@ -10,7 +10,7 @@ import { lc } from './String.js';
 
 const WatchedAddressesTable = new Table({
   documentClient,
-  name: 'WatchedAddresses',
+  name: `${process.env.SLS_STAGE}-WatchedAddresses`,
   partitionKey: {
     name: 'telegram_user_id',
     type: 'number',
@@ -38,7 +38,7 @@ const UserEntity = new Entity({
 
 const NewlyAddedAddressesTable = new Table({
   documentClient,
-  name: 'NewlyAddedAddresses',
+  name: `${process.env.SLS_STAGE}-NewlyAddedAddresses`,
   partitionKey: {
     name: 'user_id_and_address',
     type: 'string',
