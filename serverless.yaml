@@ -50,17 +50,20 @@ functions:
   address-queue-publisher:
     handler: functions/sqs-publisher.handler
     name: ${sls:stage}-curve-lend-telegram-bot-sqs-publisher
+    logRetentionInDays: 7
     events:
       - schedule:
           rate: rate(5 minutes)
   new-address-worker:
     handler: functions/sns-worker.handler
     name: ${sls:stage}-curve-lend-telegram-bot-sns-worker
+    logRetentionInDays: 7
     events:
       - sns: dispatch-new-address
   new-address-list-trimmer:
     handler: functions/new-address-list-trimmer.handler
     name: ${sls:stage}-curve-lend-telegram-bot-new-address-list-trimmer
+    logRetentionInDays: 7
     events:
       - schedule:
           rate: rate(1 hour)
@@ -71,6 +74,7 @@ constructs:
     worker:
       handler: functions/sqs-worker.handler
       name: ${sls:stage}-curve-lend-telegram-bot-address-queue-worker
+      logRetentionInDays: 7
       timeout: 20
     alarm:  ${env:SQS_DEAD_LETTER_QUEUE_NOTIFICATION_EMAIL}
     encryption: 'kmsManaged'
