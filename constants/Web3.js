@@ -12,6 +12,7 @@ const BASE_URL_EXPLORER_ADDRESS_MAP = throwWhenAccessingUndefinedKey({
   fraxtal: 'https://fraxscan.com/address/',
 }, 'BASE_URL_EXPLORER_ADDRESS_MAP');
 
+// Important: keep readme updated when new chains added!
 const NETWORK_CHAIN_ID_MAP = throwWhenAccessingUndefinedKey({
   ethereum: [1, 1337],
   arbitrum: [42161],
