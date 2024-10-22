@@ -11,7 +11,6 @@ import deleteUser from '../data/deleteUser.js';
 import removeUserAddress from '../data/removeUserAddress.js';
 import { bot, HELP_TEXT, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 import notifyNewAddressAdded from '../utils/queues/sns-publisher.js';
-import { removeNulls } from '../utils/Array.js';
 import { getHumanReadableTimeDifference } from '../utils/Date.js';
 
 // Middleware
