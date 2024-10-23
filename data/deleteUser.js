@@ -1,5 +1,3 @@
-import { DEFAULT_ADDRESS_OBJECT } from '../constants/PositionsConstants.js';
-import { lc } from '../utils/String.js';
 import { UserEntity } from '../utils/DynamoDbTools.js';
 import { DeleteItemCommand } from 'dynamodb-toolbox/entity/actions/delete';
 

@@ -21,8 +21,8 @@ export const handler = async (event, context) => {
 
   const allUsersToCheck = allUserData.filter(({ telegram_user_id, last_checked_ts, addresses }) => {
     const wasNotCheckedRecentlyAlready = nowTs > (last_checked_ts + STALE_DELAY);
-    const hasAddressesToCheck = Object.keys(addresses).length > 0;
-    const hasMatureAddresses = Object.keys(addresses).some((address) => isMatureUserAddress(telegram_user_id, address, allNewlyAddedAddresses));
+    const hasAddressesToCheck = Object.keys(addresses ?? {}).length > 0;
+    const hasMatureAddresses = Object.keys(addresses ?? {}).some((address) => isMatureUserAddress(telegram_user_id, address, allNewlyAddedAddresses));
 
     return (
       wasNotCheckedRecentlyAlready &&

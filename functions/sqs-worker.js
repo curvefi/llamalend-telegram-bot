@@ -1,3 +1,4 @@
+import without from 'lodash.without';
 import { DEFAULT_POSITION_OBJECT } from '../constants/PositionsConstants.js';
 import getAllNewlyAddedAddresses from '../data/getAllNewlyAddedAddresses.js';
 import getUserOnchainData from '../data/getUserOnchainData.js';
@@ -7,12 +8,14 @@ import updateUsersLastCheckedTs from '../data/updateUsersLastCheckedTs.js';
 import { flattenArray, removeNulls, sum, uniq } from '../utils/Array.js';
 import isMatureUserAddress from '../utils/data/is-mature-user-address.js';
 import { bot, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
+import deleteUser from '../data/deleteUser.js';
 
 export const handler = async (event) => {
   const userIds = event.Records.map(({ body }) => JSON.parse(body).telegramUserId);
   if (userIds.length === 0) return;
 
   const uniqueUserIds = uniq(userIds);
+  const deletedUserIds = [];
 
   const [
     usersData,
@@ -22,13 +25,15 @@ export const handler = async (event) => {
     getAllNewlyAddedAddresses(),
   ]);
 
-  const allAddresses = uniq(flattenArray(usersData.map(({ telegram_user_id, addresses }) => (
+  const safeUsersData = usersData.filter((o) => typeof o !== 'undefined');
+
+  const allAddresses = uniq(flattenArray(safeUsersData.map(({ telegram_user_id, addresses }) => (
     Object.keys(addresses).filter((address) => isMatureUserAddress(telegram_user_id, address, allNewlyAddedAddresses))
   ))));
 
   const addressesOnchainData = await getUserOnchainData(allAddresses);
 
-  for (const { telegram_user_id: telegramUserId, addresses } of usersData) {
+  for (const { telegram_user_id: telegramUserId, addresses } of safeUsersData) {
     const changedAddressesPositions = removeNulls(Object.entries(addresses).map(([address, positions]) => {
       // Don’t look at addresses that have already been filtered out of `allAddresses`
       if (!allAddresses.includes(address)) return null;
@@ -78,11 +83,32 @@ export const handler = async (event) => {
         ${changedAddressesPositions.map(({ address: userAddress, changedPositions }) => (`\n\\- On \`${userAddress}\`: ${Object.values(changedPositions).map(({ textPositionRepresentation }) => textPositionRepresentation)}
         `)).join("")}
       `;
-      await bot.telegram.sendMessage(telegramUserId, text, TELEGRAM_MESSAGE_OPTIONS);
 
-      await saveUserPositionHealthChange({ telegramUserId, changedAddressesPositions });
+      try {
+        await bot.telegram.sendMessage(telegramUserId, text, TELEGRAM_MESSAGE_OPTIONS);
+        await saveUserPositionHealthChange({ telegramUserId, changedAddressesPositions });
+      } catch (err) {
+        const isTelegramUserNotExistError = (
+          err?.response?.ok === false &&
+          err?.response?.error_code === 400 &&
+          err?.response?.description === 'Bad Request: chat not found'
+        );
+
+        console.log('isTelegramUserNotExistError', isTelegramUserNotExistError)
+        if (isTelegramUserNotExistError) {
+          await deleteUser({ telegramUserId });
+          deletedUserIds.push(telegramUserId);
+
+          console.log(`Deleted user ${telegramUserId}: sending Telegram message failed with "${err?.response?.description}", which means user cannot be reached anymore, hence no point to keep monitoring their addresses`);
+        } else {
+          throw err;
+        }
+      }
     }
   }
 
-  await updateUsersLastCheckedTs(uniqueUserIds);
+  const userIdsWithoutDeletedOnes = without(uniqueUserIds, ...deletedUserIds);
+  if (userIdsWithoutDeletedOnes.length > 0) {
+    await updateUsersLastCheckedTs(userIdsWithoutDeletedOnes);
+  }
 }
