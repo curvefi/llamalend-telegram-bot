@@ -88,7 +88,7 @@ constructs:
       handler: functions/sqs-worker.handler
       name: ${sls:stage}-curve-lend-telegram-bot-address-queue-worker
       logRetentionInDays: 7
-      timeout: 40
+      timeout: 120
     alarm:  ${env:SQS_DEAD_LETTER_QUEUE_NOTIFICATION_EMAIL}
     encryption: 'kmsManaged'
     batchSize: 100 # Get 100 queued items at a time; IF this number needs to go higher, then sqs-worker.js and its associated getUsersData.js will need to be reworked because BatchGetCommand allows max 100 entries requested at once
