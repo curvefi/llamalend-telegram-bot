@@ -2,6 +2,8 @@ import getTablesItemsCounts from '../data/getTablesItemCounts.js';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch'
 
 export const handler = async () => {
+  if (process.env.SLS_STAGE !== 'production') return;
+
   const cloudwatch = new CloudWatchClient();
   const counts = await getTablesItemsCounts();
 
