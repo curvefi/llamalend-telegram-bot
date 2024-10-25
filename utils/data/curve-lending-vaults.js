@@ -7,6 +7,7 @@ const getAllCurveLendingVaults = memoize(async (blockchainId) => (
       ammAddress,
       address,
       assets,
+      lendingVaultUrls,
     }) => ({
       // Return the explicit shape and data we need; must match the shape of utils/data/crvusd-markets.js
       controllerAddress,
@@ -22,6 +23,7 @@ const getAllCurveLendingVaults = memoize(async (blockchainId) => (
           symbol: assets.borrowed.symbol,
         },
       },
+      externalUrl: lendingVaultUrls.deposit?.replace('/vault/deposit', '/manage'),
     }))
 ), {
   promise: true,

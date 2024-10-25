@@ -120,7 +120,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
               `Current AMM band: *${escapeNumberForTg(positionData.currentAmmBand)}*`,
             ]);
 
-            const textPositionRepresentation = `\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? `Curve Lend on ${vaultData.network}` : 'crvUSD market'}\\):\n     ${textLines.join("\n     ")}`;
+            const textPositionRepresentation = `\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? `Curve Lend on ${vaultData.network}` : 'crvUSD market'}\\)${typeof vaultData.externalUrl !== 'undefined' ? ` \\([link](${vaultData.externalUrl})\\)` : ''}:\n     ${textLines.join("\n     ")}`;
 
             return [lendingVaultKey, {
               ...positionData,
