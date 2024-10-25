@@ -1,6 +1,6 @@
 {
   "name": "curve-lend-telegram-bot",
-  "description": "Curve Lend Positions Monitoring Telegram Bot",
+  "description": "Llamalend Positions Monitoring Telegram Bot",
   "version": "0.0.1",
   "type": "module",
   "scripts": {

@@ -22,7 +22,7 @@ Available commands:
 \\- /view: View loan information for all addresses you’ve added
 \\- /help: List all available commands
 
-[More information on GitHub](https://github.com/curvefi/curve-lend-telegram-bot?tab=readme-ov-file#curve-lend-telegram-bot)`;
+[More information on GitHub](https://github.com/curvefi/llamalend-telegram-bot?tab=readme-ov-file#curve-lend-telegram-bot)`;
 
 export {
   bot,
