@@ -1,6 +1,6 @@
 # Curve Lend Telegram Bot
 
-[`@CurveLendMonitorBot`](https://t.me/CurveLendMonitorBot) is a Telegram bot that allows you to view loan information from [Curve Lend](https://lend.curve.fi/) and [crvUSD](https://crvusd.curve.fi/) for any address you want; it’ll also notify you of important changes to these loans’ health statuses. The bot monitors all Curve Lend and crvUSD markets, on Ethereum, Arbitrum, Fraxtal and Optimism.
+[`@LlamalendMonitorBot`](https://t.me/LlamalendMonitorBot) is a Telegram bot that allows you to view loan information from [Curve Lend](https://lend.curve.fi/) and [crvUSD](https://crvusd.curve.fi/) for any address you want; it’ll also notify you of important changes to these loans’ health statuses. The bot monitors all Curve Lend and crvUSD markets, on Ethereum, Arbitrum, Fraxtal and Optimism.
 
 Example use-cases:
 
@@ -10,7 +10,7 @@ Example use-cases:
 
 ## How to use
 
-Start a conversation with [`@CurveLendMonitorBot`](https://t.me/CurveLendMonitorBot) on Telegram: <https://t.me/CurveLendMonitorBot>
+Start a conversation with [`@LlamalendMonitorBot`](https://t.me/LlamalendMonitorBot) on Telegram: <https://t.me/LlamalendMonitorBot>
 
 ## Available commands
 

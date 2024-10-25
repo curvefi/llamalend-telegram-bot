@@ -12,7 +12,7 @@ const TELEGRAM_MESSAGE_OPTIONS = {
   parse_mode: 'MarkdownV2',
 };
 
-const HELP_TEXT = `@CurveLendMonitorBot allows you to view loan information from [Curve Lend](https://lend.curve.fi/) and [crvUSD](https://crvusd.curve.fi/) for any address you want; it’ll also notify you of important changes to these loans’ health statuses\\.
+const HELP_TEXT = `@LlamalendMonitorBot allows you to view loan information from [Curve Lend](https://lend.curve.fi/) and [crvUSD](https://crvusd.curve.fi/) for any address you want; it’ll also notify you of important changes to these loans’ health statuses\\.
 
 Available commands:
 
