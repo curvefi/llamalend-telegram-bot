@@ -91,7 +91,7 @@ constructs:
       timeout: 120
     alarm:  ${env:SQS_DEAD_LETTER_QUEUE_NOTIFICATION_EMAIL}
     encryption: 'kmsManaged'
-    batchSize: 100 # Get 100 queued items at a time; IF this number needs to go higher, then sqs-worker.js and its associated getUsersData.js will need to be reworked because BatchGetCommand allows max 100 entries requested at once
+    batchSize: 20 # Get 100 queued items at a time; IF this number needs to go higher, then sqs-worker.js and its associated getUsersData.js will need to be reworked because BatchGetCommand allows max 100 entries requested at once
     maxBatchingWindow: 60 # Seconds (consume 100 items at a time, or less if threshold not reached after 60s)
     maxConcurrency: 2 # At most 2 concurrent lambdas invoked at once
 
