@@ -1,22 +1,17 @@
 import BN from 'bignumber.js';
-import getAllCurveLendingVaults from '../utils/data/curve-lending-vaults.js';
 import { arrayToHashmap, flattenArray, removeNulls } from '../utils/Array.js';
 import LENDING_CONTROLLER_ABI from '../abis/LendingController.json' assert { type: 'json' };
 import LENDING_AMM_ABI from '../abis/LendingAmm.json' assert { type: 'json' };
 import multiCall from '../utils/Calls.js';
 import groupBy from 'lodash.groupby';
 import { uintToBN } from '../utils/Parsing.js';
-import getAllCrvusdMarkets from '../utils/data/crvusd-markets.js';
 import { escapeNumberForTg } from '../utils/String.js';
 import { ALL_NETWORK_IDS } from '../constants/Web3.js';
+import getAllMarkets from './getAllMarkets.js';
+import { getTextPositionRepresentation } from '../utils/Bot.js';
 
 const getUserLendingDataForNetwork = async (userAddresses, network) => {
-  const curveLendingVaults = await getAllCurveLendingVaults(network);
-  const crvusdMarkets = network === 'ethereum' ? await getAllCrvusdMarkets() : [];
-  const allMarkets = [
-    ...curveLendingVaults.map((o) => ({ ...o, marketType: 'lend', network })),
-    ...crvusdMarkets.map((o) => ({ ...o, marketType: 'crvusd', network })),
-  ];
+  const allMarkets = await getAllMarkets(network);
 
   const userLendingData = await multiCall(flattenArray(flattenArray(
     allMarkets.map((lendingVault) => {
@@ -136,7 +131,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
               `Approx\\. liquidation price range:* ${escapeNumberForTg(positionData.priceRange[0].dp(2))}→${escapeNumberForTg(positionData.priceRange[1].dp(2))} *\\(current price: *${escapeNumberForTg(positionData.priceOracle.dp(2))}*${priceOracleDistFromRange !== undefined ? ` ≈ ${escapeNumberForTg(priceOracleDistFromRange.dp(2))}\\% away` : ''}\\)`,
             ]);
 
-            const textPositionRepresentation = `\n  \\- Borrowing *${vaultData.assets.borrowed.symbol}* against *${vaultData.assets.collateral.symbol}* \\(${vaultData.marketType === 'lend' ? `Curve Lend on ${vaultData.network}` : 'crvUSD market'}\\)${typeof vaultData.externalUrl !== 'undefined' ? ` \\([link](${vaultData.externalUrl})\\)` : ''}:\n     ${textLines.join("\n     ")}`;
+            const textPositionRepresentation = getTextPositionRepresentation(vaultData, textLines);
 
             return [lendingVaultKey, {
               ...positionData,

@@ -2,6 +2,7 @@ const POSITION_HEALTH_STATUS = {
   HEALTHY: 'healthy',
   SOFT: 'Soft Liquidation',
   HARD: 'Hard Liquidation',
+  CLOSED: 'Closed',
 };
 
 const DEFAULT_ADDRESS_OBJECT = {

@@ -9,6 +9,8 @@ import { flattenArray, removeNulls, sum, uniq } from '../utils/Array.js';
 import isMatureUserAddress from '../utils/data/is-mature-user-address.js';
 import { bot, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 import deleteUser from '../data/deleteUser.js';
+import { getTextPositionRepresentation } from '../utils/Bot.js';
+import getAllMarkets from '../data/getAllMarkets.js';
 
 export const handler = async (event) => {
   const userIds = event.Records.map(({ body }) => JSON.parse(body).telegramUserId);
@@ -20,9 +22,11 @@ export const handler = async (event) => {
   const [
     usersData,
     allNewlyAddedAddresses,
+    allMarkets,
   ] = await Promise.all([
     getUsersData(uniqueUserIds),
     getAllNewlyAddedAddresses(),
+    getAllMarkets('ethereum'),
   ]);
 
   const safeUsersData = usersData.filter((o) => typeof o !== 'undefined');
@@ -61,7 +65,10 @@ export const handler = async (event) => {
               'HEALTHY'
         );
 
-        if (currentState !== lastCheckedState) {
+        if (
+          currentState !== lastCheckedState &&
+          !(currentState === 'HEALTHY' && lastCheckedState === 'CLOSED') // Akin to position being opened, which doens’t trigger a notification either
+        ) {
           return {
             address: vaultData.address,
             currentState,
@@ -72,9 +79,34 @@ export const handler = async (event) => {
         }
       }));
 
-      if (changedPositions.length === 0) return null;
+      const removedPositions = (
+        Object.entries(positions)
+          .filter(([vaultAddress, prevState]) => (
+            prevState !== 'CLOSED' &&
+            !onchainPositions.some(({ vaultData: { address } }) => address === vaultAddress)
+          ))
+          .map(([vaultAddress, prevState]) => {
+            const vaultData = allMarkets.find(({ address }) => address === vaultAddress);
 
-      return { address, changedPositions };
+            const textLines = [
+              `State: *Closed️* \\(previous state: ${prevState === 'HARD' ? 'Hard Liquidation ⚠️' : prevState === 'SOFT' ? 'Soft Liquidation ℹ️' : 'Healthy ✅'}\\)`,
+            ];
+            const textPositionRepresentation = getTextPositionRepresentation(vaultData, textLines);
+
+            return {
+              address: vaultAddress,
+              currentState: 'CLOSED',
+              textPositionRepresentation,
+            };
+          })
+      );
+
+      if (changedPositions.length === 0 && removedPositions.length === 0) return null;
+
+      return {
+        address,
+        changedPositions: [...changedPositions, ...removedPositions],
+      };
     }));
 
     if (changedAddressesPositions.length > 0) {
