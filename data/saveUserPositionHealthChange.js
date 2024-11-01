@@ -16,8 +16,9 @@ const saveUserPositionHealthChange = async ({
         arrayToHashmap(changedPositions.map(({
           currentState,
           address: positionAddress,
+          network: positionNetwork,
         }) => [
-            positionAddress,
+            `${positionNetwork}-${positionAddress}`,
             currentState,
           ])),
       ])),

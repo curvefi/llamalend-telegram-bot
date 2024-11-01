@@ -5,12 +5,13 @@ import getUserOnchainData from '../data/getUserOnchainData.js';
 import getUsersData from '../data/getUsersData.js';
 import saveUserPositionHealthChange from '../data/saveUserPositionHealthChange.js';
 import updateUsersLastCheckedTs from '../data/updateUsersLastCheckedTs.js';
-import { flattenArray, removeNulls, sum, uniq } from '../utils/Array.js';
+import { arrayToHashmap, flattenArray, removeNulls, sum, uniq } from '../utils/Array.js';
 import isMatureUserAddress from '../utils/data/is-mature-user-address.js';
 import { bot, TELEGRAM_MESSAGE_OPTIONS } from '../utils/Telegraf.js';
 import deleteUser from '../data/deleteUser.js';
 import { getTextPositionRepresentation } from '../utils/Bot.js';
 import getAllMarkets from '../data/getAllMarkets.js';
+import { ALL_NETWORK_IDS } from '../constants/Web3.js';
 
 export const handler = async (event) => {
   const userIds = event.Records.map(({ body }) => JSON.parse(body).telegramUserId);
@@ -22,11 +23,11 @@ export const handler = async (event) => {
   const [
     usersData,
     allNewlyAddedAddresses,
-    allMarkets,
+    allMarketsByNetwork,
   ] = await Promise.all([
     getUsersData(uniqueUserIds),
     getAllNewlyAddedAddresses(),
-    getAllMarkets('ethereum'),
+    arrayToHashmap(await Promise.all(ALL_NETWORK_IDS.map(async (network) => [network, await getAllMarkets(network)]))),
   ]);
 
   const safeUsersData = usersData.filter((o) => typeof o !== 'undefined');
@@ -44,18 +45,18 @@ export const handler = async (event) => {
 
       const onchainPositions = Object.values(addressesOnchainData[address]);
 
-      // This will not detect if user closed a position, but that's not the purpose of this bot
       const changedPositions = removeNulls(onchainPositions.map(({
         isInHardLiq,
         isInSoftLiq,
         textPositionRepresentation,
         vaultData,
       }) => {
+        const vaultKey = `${vaultData.network}-${vaultData.address}`;
         const prevPositionData = {
           ...DEFAULT_POSITION_OBJECT,
-          ...(typeof positions[vaultData.address] !== 'undefined' ? {
+          ...(typeof positions[vaultKey] !== 'undefined' ? {
             address: vaultData.address,
-            last_checked_state: positions[vaultData.address],
+            last_checked_state: positions[vaultKey],
           } : {})
         };
         const lastCheckedState = prevPositionData.last_checked_state;
@@ -71,6 +72,7 @@ export const handler = async (event) => {
         ) {
           return {
             address: vaultData.address,
+            network: vaultData.network,
             currentState,
             textPositionRepresentation,
           };
@@ -81,12 +83,20 @@ export const handler = async (event) => {
 
       const removedPositions = (
         Object.entries(positions)
-          .filter(([vaultAddress, prevState]) => (
-            prevState !== 'CLOSED' &&
-            !onchainPositions.some(({ vaultData: { address } }) => address === vaultAddress)
-          ))
-          .map(([vaultAddress, prevState]) => {
-            const vaultData = allMarkets.find(({ address }) => address === vaultAddress);
+          .filter(([vaultKey, prevState]) => {
+            const [vaultNetwork, vaultAddress] = vaultKey.split('-');
+
+            return (
+              prevState !== 'CLOSED' &&
+              !onchainPositions.some(({ vaultData: { address, network } }) => (
+                address === vaultAddress &&
+                network === vaultNetwork
+              ))
+            );
+          })
+          .map(([vaultKey, prevState]) => {
+            const [vaultNetwork, vaultAddress] = vaultKey.split('-');
+            const vaultData = allMarketsByNetwork[vaultNetwork].find(({ address }) => address === vaultAddress);
 
             const textLines = [
               `State: *Closed️* \\(previous state: ${prevState === 'HARD' ? 'Hard Liquidation ⚠️' : prevState === 'SOFT' ? 'Soft Liquidation ℹ️' : 'Healthy ✅'}\\)`,
@@ -94,7 +104,8 @@ export const handler = async (event) => {
             const textPositionRepresentation = getTextPositionRepresentation(vaultData, textLines);
 
             return {
-              address: vaultAddress,
+              address: vaultData.address,
+              network: vaultData.network,
               currentState: 'CLOSED',
               textPositionRepresentation,
             };

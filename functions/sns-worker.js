@@ -23,6 +23,7 @@ export const handler = async (event) => {
 
     return {
       address: vaultData.address,
+      network: vaultData.network,
       currentState,
       textPositionRepresentation,
     };
