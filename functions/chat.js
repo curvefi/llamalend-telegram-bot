@@ -15,8 +15,15 @@ import { getHumanReadableTimeDifference } from '../utils/Date.js';
 
 // Middleware
 bot.use(async (ctx, next) => {
-  if (ctx?.update?.message?.chat?.type !== 'private') await ctx.reply('This bot only accepts direct messages from Telegram users');
-  else await next();
+  if (ctx?.update?.message?.chat?.type !== 'private') {
+    await ctx.reply('This bot only accepts direct messages from Telegram users')
+      .catch((err) => {
+        if (err.code === 403) { /* Do nothing, unsupported use of the bot leading to expected error */ }
+        else throw err;
+      });
+  } else {
+    await next()
+  };
 });
 
 bot.command('add', async (ctx) => {
