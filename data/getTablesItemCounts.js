@@ -1,13 +1,15 @@
 import { DescribeTableCommand } from '@aws-sdk/client-dynamodb';
 import documentClient from '../utils/DynamoDbInstance.js';
-import { NewlyAddedAddressesTable, WatchedAddressesTable } from '../utils/DynamoDbTools.js';
+import { NewlyAddedAddressesTable, WatchedAddressesTable, WatchedAddressesHealthTable } from '../utils/DynamoDbTools.js';
 
 const getTablesItemsCounts = async () => {
   const [
     watchedAddressesTable,
+    watchedAddressesHealthTable,
     newlyAddedAddressesTable,
   ] = await Promise.all([
     WatchedAddressesTable,
+    WatchedAddressesHealthTable,
     NewlyAddedAddressesTable,
   ].map(async (table) => {
     const command = new DescribeTableCommand({
@@ -20,6 +22,7 @@ const getTablesItemsCounts = async () => {
 
   return {
     WatchedAddressesTable: watchedAddressesTable,
+    WatchedAddressesHealthTable: watchedAddressesHealthTable,
     NewlyAddedAddressesTable: newlyAddedAddressesTable,
   };
 };

@@ -1,5 +1,5 @@
 import { lc } from '../utils/String.js';
-import { UserEntity } from '../utils/DynamoDbTools.js';
+import { UserEntity, UserHealthEntity } from '../utils/DynamoDbTools.js';
 import { UpdateItemCommand, $remove } from 'dynamodb-toolbox/entity/actions/update';
 
 /**
@@ -22,6 +22,15 @@ const removeUserAddress = async ({
       },
     })
     .options({ returnValues: 'ALL_NEW' })
+    .send();
+
+  await UserHealthEntity.build(UpdateItemCommand)
+    .item({
+      telegram_user_id: telegramUserId,
+      addresses: {
+        [lc(removedAddress)]: $remove(),
+      },
+    })
     .send();
 
   return updatedAddresses;

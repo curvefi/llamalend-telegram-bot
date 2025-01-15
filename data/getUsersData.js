@@ -1,4 +1,4 @@
-import { UserEntity, WatchedAddressesTable } from '../utils/DynamoDbTools.js';
+import { UserEntity, WatchedAddressesTable, WatchedAddressesHealthTable, UserHealthEntity } from '../utils/DynamoDbTools.js';
 import { BatchGetRequest } from 'dynamodb-toolbox/entity/actions/batchGet';
 import {
   BatchGetCommand,
@@ -15,4 +15,17 @@ const getUsersData = async (telegramUserIds) => {
   return usersData;
 };
 
+const getUsersHealthData = async (telegramUserIds) => {
+  const { Responses: [usersHealthData] } = await execute(WatchedAddressesHealthTable.build(BatchGetCommand).requests(
+    ...telegramUserIds.map((telegramUserId) => (
+      UserHealthEntity.build(BatchGetRequest).key({ telegram_user_id: telegramUserId })
+    ))
+  ));
+
+  return usersHealthData;
+};
+
 export default getUsersData;
+export {
+  getUsersHealthData,
+};

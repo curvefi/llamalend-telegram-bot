@@ -14,6 +14,7 @@ export const handler = async (event) => {
     isInSoftLiq,
     textPositionRepresentation,
     vaultData,
+    health,
   }) => {
     const currentState = (
       isInHardLiq ? 'HARD' :
@@ -21,10 +22,13 @@ export const handler = async (event) => {
           'HEALTHY'
     );
 
+    const currentHealth = health.times(100);
+
     return {
       address: vaultData.address,
       network: vaultData.network,
       currentState,
+      currentHealth,
       textPositionRepresentation,
     };
   });
@@ -37,7 +41,13 @@ export const handler = async (event) => {
     }],
   });
 
-  const unhealthyPositions = foundPositions.filter(({ currentState }) => currentState !== 'HEALTHY');
+  const unhealthyPositions = foundPositions.filter(({
+    currentState,
+    currentHealth,
+  }) => (
+    currentState !== 'HEALTHY' ||
+    currentHealth.lte(2)
+  ));
   if (unhealthyPositions.length > 0) {
     const text = `
       *Found ${unhealthyPositions.length > 1 ? 'positions' : 'position'} with a health status deserving your attention on the address you’ve just started monitoring \\(\`${shortAddress(newAddress)}\`\\):*

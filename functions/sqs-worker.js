@@ -1,8 +1,9 @@
 import without from 'lodash.without';
+import BN from 'bignumber.js';
 import { DEFAULT_POSITION_OBJECT } from '../constants/PositionsConstants.js';
 import getAllNewlyAddedAddresses from '../data/getAllNewlyAddedAddresses.js';
 import getUserOnchainData from '../data/getUserOnchainData.js';
-import getUsersData from '../data/getUsersData.js';
+import getUsersData, { getUsersHealthData } from '../data/getUsersData.js';
 import saveUserPositionHealthChange from '../data/saveUserPositionHealthChange.js';
 import updateUsersLastCheckedTs from '../data/updateUsersLastCheckedTs.js';
 import { arrayToHashmap, flattenArray, removeNulls, sum, uniq } from '../utils/Array.js';
@@ -22,15 +23,18 @@ export const handler = async (event) => {
 
   const [
     usersData,
+    usersHealthData,
     allNewlyAddedAddresses,
     allMarketsByNetwork,
   ] = await Promise.all([
     getUsersData(uniqueUserIds),
+    getUsersHealthData(uniqueUserIds),
     getAllNewlyAddedAddresses(),
     arrayToHashmap(await Promise.all(ALL_NETWORK_IDS.map(async (network) => [network, await getAllMarkets(network)]))),
   ]);
 
   const safeUsersData = usersData.filter((o) => typeof o !== 'undefined');
+  const safeUsersHealthData = usersHealthData.filter((o) => typeof o !== 'undefined');
 
   const allAddresses = uniq(flattenArray(safeUsersData.map(({ telegram_user_id, addresses }) => (
     Object.keys(addresses).filter((address) => isMatureUserAddress(telegram_user_id, address, allNewlyAddedAddresses))
@@ -44,12 +48,14 @@ export const handler = async (event) => {
       if (!allAddresses.includes(address)) return null;
 
       const onchainPositions = Object.values(addressesOnchainData[address]);
+      const positionsHealth = safeUsersHealthData.find(({ telegram_user_id }) => telegram_user_id === telegramUserId)?.addresses?.[address] ?? [];
 
       const changedPositions = removeNulls(onchainPositions.map(({
         isInHardLiq,
         isInSoftLiq,
         textPositionRepresentation,
         vaultData,
+        health,
       }) => {
         const vaultKey = `${vaultData.network}-${vaultData.address}`;
         const prevPositionData = {
@@ -57,23 +63,40 @@ export const handler = async (event) => {
           ...(typeof positions[vaultKey] !== 'undefined' ? {
             address: vaultData.address,
             last_checked_state: positions[vaultKey],
-          } : {})
+          } : {}),
+          ...(typeof positionsHealth[vaultKey] !== 'undefined' ? {
+            last_health: positionsHealth[vaultKey],
+          } : {}),
         };
+
         const lastCheckedState = prevPositionData.last_checked_state;
         const currentState = (
           isInHardLiq ? 'HARD' :
             isInSoftLiq ? 'SOFT' :
               'HEALTHY'
         );
+        const didStateChange = currentState !== lastCheckedState;
+
+        const lastHealth = BN(prevPositionData?.last_health ?? 100); // Default to any value outside the alert range
+        const currentHealth = health.times(100);
+        const didHealthChange = (
+          (lastHealth.gt(2) && currentHealth.lte(2)) || // Health dropped from 2+ to below 2
+          (lastHealth.lt(2) && lastHealth.gt(1) && currentHealth.lte(1)) || // Health dropped from [1, 2] to below 1
+          (lastHealth.lt(1) && lastHealth.gt(0.2) && currentHealth.lte(0.2)) || // Health dropped from [0.2, 1] to below 0.2
+          (lastHealth.lt(0.2) && lastHealth.gt(0.2) && currentHealth.lte(0.2)) || // Health dropped from [0.2, 0.2] to below 0.2
+          (lastHealth.lt(0.2) && lastHealth.gt(0) && currentHealth.lte(0)) || // Health dropped from [0, 0.2] to below 0
+          (lastHealth.lte(2) && currentHealth.gt(2)) // Health rose from below 2 to 2+ (less granular alerts on the way up)
+        );
 
         if (
-          currentState !== lastCheckedState &&
+          (didStateChange || didHealthChange) &&
           !(currentState === 'HEALTHY' && lastCheckedState === 'CLOSED') // Akin to position being opened, which doens’t trigger a notification either
         ) {
           return {
             address: vaultData.address,
             network: vaultData.network,
             currentState,
+            currentHealth,
             textPositionRepresentation,
           };
         } else {

@@ -1,5 +1,5 @@
 import { lc } from '../utils/String.js';
-import { NewlyAddedAddressEntity, UserEntity, userIdAndAddressKeyFormatter } from '../utils/DynamoDbTools.js';
+import { NewlyAddedAddressEntity, UserEntity, UserHealthEntity, userIdAndAddressKeyFormatter } from '../utils/DynamoDbTools.js';
 import { UpdateItemCommand, $set } from 'dynamodb-toolbox/entity/actions/update';
 import { PutItemCommand } from 'dynamodb-toolbox/entity/actions/put';
 import { getNowTimestamp } from '../utils/Date.js';
@@ -16,6 +16,15 @@ const addUserAddress = async ({
       },
     })
     .options({ returnValues: 'ALL_NEW' })
+    .send();
+
+  await UserHealthEntity.build(UpdateItemCommand)
+    .item({
+      telegram_user_id: telegramUserId,
+      addresses: {
+        [lc(newAddress)]: $set({}),
+      },
+    })
     .send();
 
   await NewlyAddedAddressEntity.build(PutItemCommand)

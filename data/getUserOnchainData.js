@@ -47,7 +47,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
           address: controllerAddress,
           abi: LENDING_CONTROLLER_ABI,
           methodName: 'health',
-          params: [userAddress],
+          params: [userAddress, true],
           metaData: { userAddress, lendingVaultAddress, type: 'health' },
           network,
         }, {
@@ -125,7 +125,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
 
             const textLines = removeNulls([
               `State: *${isInHardLiq ? 'Hard Liquidation ⚠️' : isInSoftLiq ? 'Soft Liquidation ℹ️' : 'Healthy ✅'}*`,
-              (isInHardLiq || isInSoftLiq) ? `Health: *${escapeNumberForTg(positionData.health.times(100).dp(4))}%*` : null,
+              (isInHardLiq || isInSoftLiq || positionData.health.times(100).lte(2)) ? `Health: *${escapeNumberForTg(positionData.health.times(100).dp(4))}% ${isInHardLiq ? '⚠️' : 'ℹ️'}*` : null,
               (isInHardLiq || isInSoftLiq) ? `Currently at risk: *${escapeNumberForTg(positionData.userState.atRiskCollat.dp(4))} ${vaultData.assets.collateral.symbol} and ${escapeNumberForTg(positionData.userState.atRiskBorrowed.dp(4))} ${vaultData.assets.borrowed.symbol}*` : null,
               `Liquidation band range: ${escapeNumberForTg(positionData.bandRange[0])}→${escapeNumberForTg(positionData.bandRange[1])} \\(current AMM band: ${escapeNumberForTg(positionData.currentAmmBand)}\\)`,
               `Approx\\. liquidation price range:* ${escapeNumberForTg(positionData.priceRange[0].dp(2))}→${escapeNumberForTg(positionData.priceRange[1].dp(2))} *\\(current price: *${escapeNumberForTg(positionData.priceOracle.dp(2))}*${priceOracleDistFromRange !== undefined ? ` ≈ ${escapeNumberForTg(priceOracleDistFromRange.dp(2))}\\% away` : ''}\\)`,

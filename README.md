@@ -29,9 +29,9 @@ A loan on Curve can be in three different states:
 
 ([Read more about borrowing, soft and hard liquidations, in Curve Resources](https://resources.curve.fi/lending/overview/#borrowing))
 
-The bot checks positions on monitored addresses every 5-10 minutes. When the health status changes (e.g. from `Healthy` to `Soft Liquidation`), it sends you a message with the loan’s details.
+The bot checks positions on monitored addresses every 5-10 minutes. When the health status changes (e.g. from `Healthy` to `Soft Liquidation`) or your health ratio enters/exits a dangerous zone (i.e. below 2%), it sends you a message with the loan’s current details.
 
-The bot also runs a check right when a new address is added, and if this address contains any position that isn't `Healthy`, it tells you about it right away.
+The bot also runs a check right when a new address is added, and if this address contains any position that is unhealthy in any way, it tells you about it right away.
 
 ## Privacy
 

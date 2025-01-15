@@ -33,6 +33,17 @@ provider:
         - Effect: 'Allow'
           Action:
             - 'dynamodb:PutItem'
+            - 'dynamodb:Get*'
+            - 'dynamodb:BatchGetItem'
+            - 'dynamodb:Scan*'
+            - 'dynamodb:Query*'
+            - 'dynamodb:UpdateItem'
+            - 'dynamodb:DeleteItem'
+            - 'dynamodb:DescribeTable'
+          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stage}-WatchedAddressesHealth
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:PutItem'
             - 'dynamodb:Scan*'
             - 'dynamodb:DeleteItem'
             - 'dynamodb:DescribeTable'
@@ -101,6 +112,19 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${sls:stage}-WatchedAddresses
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: telegram_user_id
+            AttributeType: N
+        KeySchema:
+          - AttributeName: telegram_user_id
+            KeyType: HASH
+        SSESpecification:
+          SSEEnabled: true
+    WatchedAddressesHealth:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${sls:stage}-WatchedAddressesHealth
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: telegram_user_id
