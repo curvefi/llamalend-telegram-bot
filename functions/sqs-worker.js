@@ -90,7 +90,8 @@ export const handler = async (event) => {
 
         if (
           (didStateChange || didHealthChange) &&
-          !(currentState === 'HEALTHY' && lastCheckedState === 'CLOSED') // Akin to position being opened, which doens’t trigger a notification either
+          !(currentState === 'HEALTHY' && lastCheckedState === 'CLOSED') && // Akin to position being opened, which doens’t trigger a notification either
+          !(currentState === 'CLOSED' && lastCheckedState === 'CLOSED') // Prevent alerts that might be triggered for closed positions by didHealthChange on release of 11dc1c9cc37991039b1ffb33f36d69ab5e15c73d
         ) {
           return {
             address: vaultData.address,
