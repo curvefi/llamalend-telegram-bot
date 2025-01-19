@@ -1,3 +1,4 @@
+import BN from 'bignumber.js';
 import { UserEntity, UserHealthEntity } from '../utils/DynamoDbTools.js';
 import { UpdateItemCommand } from 'dynamodb-toolbox/entity/actions/update';
 import { arrayToHashmap } from '../utils/Array.js';
@@ -33,11 +34,16 @@ const saveUserPositionHealthChange = async ({
         address,
         arrayToHashmap(changedPositions.map(({
           currentHealth,
+          currentState,
           address: positionAddress,
           network: positionNetwork,
         }) => [
             `${positionNetwork}-${positionAddress}`,
-            currentHealth.dp(4).toNumber(),
+            (
+              currentState === 'CLOSED' ?
+                BN(100) : // Reset to initial default health value
+                currentHealth
+            ).dp(4).toNumber(),
           ])),
       ])),
   };
