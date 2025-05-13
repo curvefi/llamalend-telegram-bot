@@ -14,7 +14,7 @@ const CRVUSD_MARKETS_ADDRESS_ID_MAP = new Map([
 ]);
 
 const getAllCrvusdMarkets = memoize(async () => {
-  const crvusdMarkets = await fetchPages('https://prices.curve.fi/v1/crvusd/markets/ethereum', {
+  const crvusdMarkets = await fetchPages('https://prices.curve.finance/v1/crvusd/markets/ethereum', {
     fetch_on_chain: false,
     per_page: 100,
   });
@@ -32,7 +32,7 @@ const getAllCrvusdMarkets = memoize(async () => {
     stablecoin_token,
   }) => {
     const marketId = CRVUSD_MARKETS_ADDRESS_ID_MAP.get(lc(address));
-    const externalUrl = typeof marketId === 'undefined' ? undefined : `https://crvusd.curve.fi/#/ethereum/markets/${marketId}/manage/loan`;
+    const externalUrl = typeof marketId === 'undefined' ? undefined : `https://www.curve.finance/crvusd/ethereum/markets/${marketId}/manage/loan`;
 
     return {
       // Return the explicit shape and data we need; must match the shape of utils/data/curve-lending-vaults.js

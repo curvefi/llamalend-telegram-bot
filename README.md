@@ -1,6 +1,6 @@
 # Llamalend Telegram Bot
 
-[`@LlamalendMonitorBot`](https://t.me/LlamalendMonitorBot) is a Telegram bot that allows you to view loan information from [Curve Lend](https://lend.curve.fi/) and [crvUSD](https://crvusd.curve.fi/) for any address you want; it’ll also notify you of important changes to these loans’ health statuses. The bot monitors all Curve Lend and crvUSD markets, on Ethereum, Arbitrum, Fraxtal and Optimism.
+[`@LlamalendMonitorBot`](https://t.me/LlamalendMonitorBot) is a Telegram bot that allows you to view loan information from [Curve Lend](https://curve.finance/lend/) and [crvUSD](https://curve.finance/crvusd/) for any address you want; it’ll also notify you of important changes to these loans’ health statuses. The bot monitors all Curve Lend and crvUSD markets, on Ethereum, Arbitrum, Fraxtal and Optimism.
 
 Example use-cases:
 
@@ -27,7 +27,7 @@ A loan on Curve can be in three different states:
 - `Soft Liquidation`
 - `Hard Liquidation`
 
-([Read more about borrowing, soft and hard liquidations, in Curve Resources](https://resources.curve.fi/lending/overview/#borrowing))
+([Read more about borrowing, soft and hard liquidations, in Curve Resources](https://resources.curve.finance/lending/overview/#borrowing))
 
 The bot checks positions on monitored addresses every 5-10 minutes. When the health status changes (e.g. from `Healthy` to `Soft Liquidation`) or your health ratio enters/exits a dangerous zone (i.e. below 2%), it sends you a message with the loan’s current details.
 

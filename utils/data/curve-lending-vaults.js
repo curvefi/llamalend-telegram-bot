@@ -1,7 +1,7 @@
 import memoize from 'memoizee';
 
 const getAllCurveLendingVaults = memoize(async (blockchainId) => (
-  Array.from(Object.values((await (await fetch(`https://api.curve.fi/api/getLendingVaults/all/${blockchainId}`)).json()).data.lendingVaultData ?? {}))
+  Array.from(Object.values((await (await fetch(`https://api.curve.finance/api/getLendingVaults/all/${blockchainId}`)).json()).data.lendingVaultData ?? {}))
     .map(({
       controllerAddress,
       ammAddress,
