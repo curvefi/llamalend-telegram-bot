@@ -60,7 +60,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
         }, {
           address: ammAddress,
           abi: LENDING_AMM_ABI,
-          methodName: 'active_band',
+          methodName: 'active_band_with_skip',
           metaData: { userAddress, lendingVaultAddress, type: 'currentAmmBand' },
           network,
         }, {
@@ -88,7 +88,7 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
                 dataType,
                 (
                   dataType === 'health' ? uintToBN(data, 18).dp(6) :
-                    dataType === 'bandRange' ? data.map((n) => Number(n)).sort() : // Always asc order
+                    dataType === 'bandRange' ? data.map((n) => Number(n)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) : // Always asc order
                       dataType === 'currentAmmBand' ? Number(data) :
                         dataType === 'priceRange' ? data.map((price, i) => uintToBN(price, 18).dp(6)) :
                           dataType === 'priceOracle' ? uintToBN(data, 18).dp(6) :
