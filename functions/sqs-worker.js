@@ -160,9 +160,13 @@ export const handler = async (event) => {
           err?.response?.error_code === 400 &&
           err?.response?.description === 'Bad Request: chat not found'
         );
+        const isTelegramUserBlockedBotError = (
+          err?.response?.ok === false &&
+          err?.response?.error_code === 403 &&
+          err?.response?.description === 'Forbidden: bot was blocked by the user'
+        );
 
-        console.log('isTelegramUserNotExistError', isTelegramUserNotExistError)
-        if (isTelegramUserNotExistError) {
+        if (isTelegramUserNotExistError || isTelegramUserBlockedBotError) {
           await deleteUser({ telegramUserId });
           deletedUserIds.push(telegramUserId);
 
