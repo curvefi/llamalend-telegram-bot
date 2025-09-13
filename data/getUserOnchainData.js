@@ -131,8 +131,6 @@ const getUserLendingDataForNetwork = async (userAddresses, network) => {
               `Approx\\. liquidation price range:* ${escapeNumberForTg(positionData.priceRange[0].dp(2))}→${escapeNumberForTg(positionData.priceRange[1].dp(2))} *\\(current price: *${escapeNumberForTg(positionData.priceOracle.dp(2))}*${priceOracleDistFromRange !== undefined ? ` ≈ ${escapeNumberForTg(priceOracleDistFromRange.dp(2))}\\% away` : ''}\\)`,
             ]);
 
-            console.log('text lines', positionData.priceOracle.dp(2), positionData.currentAmmBand)
-
             const textPositionRepresentation = getTextPositionRepresentation(vaultData, textLines);
 
             return [lendingVaultKey, {
