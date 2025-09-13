@@ -51,9 +51,63 @@ const MULTICALL_CHUNKS_SIZE = {
 const ALL_NETWORK_IDS = Array.from(Object.keys(NETWORK_CHAIN_ID_MAP));
 const ALL_CHAIN_IDS = flattenArray(Array.from(Object.values(NETWORK_CHAIN_ID_MAP)));
 
+export class HttpHeadersJsonRpcProvider extends JsonRpcProvider {
+  constructor(url, network) {
+    super(url, network);
+    this._lastResponseHeaders = null;
+    this.aaurl = url;
+  }
+
+  _saveResponseHeaders(headers) {
+    // Normalize Headers object -> plain object
+    const result = {};
+    for (const [k, v] of headers.entries()) result[k] = v;
+    this._lastResponseHeaders = result;
+  }
+
+  getLastResponseHeaders() {
+    return this._lastResponseHeaders;
+  }
+
+  // Override low-level send method used by JsonRpcProvider to perform the HTTP request.
+  // ethers v6 JsonRpcProvider uses fetchRequest; ensure this override matches your ethers version.
+  async send(method, params) {
+    const url = this.aaurl;
+    const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method, params });
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body,
+    });
+
+    // Save headers (Response.headers is a Headers instance)
+    // this._saveResponseHeaders(res.headers);
+    console.log('res.headers', res.headers)
+
+    if (!res.ok) {
+      const text = await res.text();
+      const err = new Error(`HTTP error ${res.status}: ${text}`);
+      err.status = res.status;
+      throw err;
+    }
+
+    const json = await res.json();
+    if (json.error) {
+      const err = new Error(json.error.message || "RPC Error");
+      err.code = json.error.code;
+      err.data = json.error.data;
+      throw err;
+    }
+    return json.result;
+  }
+}
+
 const PROVIDER_INSTANCES = throwWhenAccessingUndefinedKey(arrayToHashmap(
   Object.entries(NETWORK_RPC_URL_MAP)
-    .map(([networkId, networkRpcUrl]) => [networkId, new JsonRpcProvider(networkRpcUrl)])
+    .map(([networkId, networkRpcUrl]) => [networkId, (networkId === 'ethereum' ? new HttpHeadersJsonRpcProvider(networkRpcUrl) : new JsonRpcProvider(networkRpcUrl))])
 ));
 
 export {
