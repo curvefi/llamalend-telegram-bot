@@ -13,40 +13,41 @@ provider:
     BOT_TOKEN_DEV: ${env:BOT_TOKEN_DEV}
     BOT_TOKEN_PROD: ${env:BOT_TOKEN_PROD}
     DRPC_KEY: ${env:DRPC_KEY}
+    ALCHEMY_KEY: ${env:ALCHEMY_KEY}
     AWS_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID}
     SQS_URL: ${construct:address-queue-worker.queueUrl}
     SLS_STAGE: ${sls:stage}
   iam:
     role:
       statements:
-        - Effect: 'Allow'
+        - Effect: "Allow"
           Action:
-            - 'dynamodb:PutItem'
-            - 'dynamodb:Get*'
-            - 'dynamodb:BatchGetItem'
-            - 'dynamodb:Scan*'
-            - 'dynamodb:Query*'
-            - 'dynamodb:UpdateItem'
-            - 'dynamodb:DeleteItem'
-            - 'dynamodb:DescribeTable'
+            - "dynamodb:PutItem"
+            - "dynamodb:Get*"
+            - "dynamodb:BatchGetItem"
+            - "dynamodb:Scan*"
+            - "dynamodb:Query*"
+            - "dynamodb:UpdateItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:DescribeTable"
           Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stage}-WatchedAddresses
-        - Effect: 'Allow'
+        - Effect: "Allow"
           Action:
-            - 'dynamodb:PutItem'
-            - 'dynamodb:Get*'
-            - 'dynamodb:BatchGetItem'
-            - 'dynamodb:Scan*'
-            - 'dynamodb:Query*'
-            - 'dynamodb:UpdateItem'
-            - 'dynamodb:DeleteItem'
-            - 'dynamodb:DescribeTable'
+            - "dynamodb:PutItem"
+            - "dynamodb:Get*"
+            - "dynamodb:BatchGetItem"
+            - "dynamodb:Scan*"
+            - "dynamodb:Query*"
+            - "dynamodb:UpdateItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:DescribeTable"
           Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stage}-WatchedAddressesHealth
-        - Effect: 'Allow'
+        - Effect: "Allow"
           Action:
-            - 'dynamodb:PutItem'
-            - 'dynamodb:Scan*'
-            - 'dynamodb:DeleteItem'
-            - 'dynamodb:DescribeTable'
+            - "dynamodb:PutItem"
+            - "dynamodb:Scan*"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:DescribeTable"
           Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stage}-NewlyAddedAddresses
         - Effect: "Allow"
           Resource: "*"
@@ -100,8 +101,8 @@ constructs:
       name: ${sls:stage}-curve-lend-telegram-bot-address-queue-worker
       logRetentionInDays: 7
       timeout: 120
-    alarm:  ${env:SQS_DEAD_LETTER_QUEUE_NOTIFICATION_EMAIL}
-    encryption: 'kmsManaged'
+    alarm: ${env:SQS_DEAD_LETTER_QUEUE_NOTIFICATION_EMAIL}
+    encryption: "kmsManaged"
     batchSize: 20 # Get 100 queued items at a time; IF this number needs to go higher, then sqs-worker.js and its associated getUsersData.js will need to be reworked because BatchGetCommand allows max 100 entries requested at once
     maxBatchingWindow: 60 # Seconds (consume 100 items at a time, or less if threshold not reached after 60s)
     maxConcurrency: 2 # At most 2 concurrent lambdas invoked at once

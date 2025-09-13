@@ -38,7 +38,8 @@ const NETWORK_NAMES_MAP = throwWhenAccessingUndefinedKey({
 }, 'NETWORK_NAMES_MAP');
 
 const NETWORK_RPC_URL_MAP = throwWhenAccessingUndefinedKey({
-  ethereum: `https://lb.drpc.org/ogrpc?network=ethereum&dkey=${process.env.DRPC_KEY}`,
+  // ethereum: `https://lb.drpc.org/ogrpc?network=ethereum&dkey=${process.env.DRPC_KEY}`,
+  ethereum: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
   arbitrum: `https://lb.drpc.org/ogrpc?network=arbitrum&dkey=${process.env.DRPC_KEY}`,
   fraxtal: 'https://rpc.frax.com',
   optimism: `https://lb.drpc.org/ogrpc?network=optimism&dkey=${process.env.DRPC_KEY}`,
